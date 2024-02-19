@@ -1,0 +1,216 @@
+import pickle
+import datetime
+import logging
+
+class Logger:
+    def __init__(self, filename="activitati.log"):
+        logging.basicConfig(filename=filename, level=logging.INFO)
+
+    def log(self, mesaj):
+        logging.info(mesaj)
+
+logger = Logger()
+
+class DomeniuStudiu:
+    INGINERIE_MECANICĂ = "INGINERIE MECANICĂ"
+    INGINERIE_SOFTWARE = "INGINERIE SOFTWARE"
+    TEHNOLOGIE_ALIMENTARĂ = "TEHNOLOGIE ALIMENTARĂ"
+    URBANISM = "URBANISM"
+    ARHITECTURĂ = "ARHITECTURĂ"
+    MEDICINĂ_VETERINARĂ = "MEDICINĂ VETERINARĂ"
+
+class Student:
+    def __init__(self, prenume, nume, email, dataInscriere, dataNasterii):
+        self.prenume = prenume
+        self.nume = nume
+        self.email = email
+        self.dataInscriere = dataInscriere
+        self.dataNasterii = dataNasterii
+        self.facultate = None
+
+class Facultate:
+    def __init__(self, nume, abreviere, domeniuStudiu):
+        self.nume = nume
+        self.abreviere = abreviere
+        self.domeniuStudiu = domeniuStudiu
+        self.studenti = []
+
+    def adauga_student(self, student):
+        self.studenti.append(student)
+        student.facultate = self
+
+    def absolvent_student(self, student):
+        self.studenti.remove(student)
+        student.facultate = None
+
+    def afiseaza_studenti(self):
+        for student in self.studenti:
+            print(student.prenume, student.nume)
+
+    def este_student_in_facultate(self, student):
+        return student in self.studenti
+
+class Universitate:
+    def __init__(self):
+        self.facultati = []
+
+    def adauga_facultate(self, facultate):
+        self.facultati.append(facultate)
+
+    def gaseste_facultate_student(self, email):
+        for facultate in self.facultati:
+            for student in facultate.studenti:
+                if student.email == email:
+                    return facultate
+        return None
+
+    def afiseaza_facultati(self):
+        for facultate in self.facultati:
+            print(facultate.nume)
+
+    def afiseaza_facultati_dupa_domeniu(self, domeniu):
+        for facultate in self.facultati:
+            if facultate.domeniuStudiu == domeniu:
+                print(facultate.nume)
+
+universitate = Universitate()
+
+class ManagerSalvare:
+    @staticmethod
+    def salveaza(universitate, filename="universitate.pkl"):
+        with open(filename, "wb") as file:
+            pickle.dump(universitate, file)
+
+    @staticmethod
+    def incarca(filename="universitate.pkl"):
+        try:
+            with open(filename, "rb") as file:
+                return pickle.load(file)
+        except FileNotFoundError:
+            return Universitate()
+
+universitate = ManagerSalvare.incarca()
+
+while True:
+    print("1. Adaugă facultate")
+    print("2. Adaugă student la facultate")
+    print("3. Absolventă student din facultate")
+    print("4. Afișează studenții din facultate")
+    print("5. Afișează absolvenții din facultate")
+    print("6. Verifică dacă studentul este în facultate")
+    print("7. Găsește facultatea studentului")
+    print("8. Afișează toate facultățile")
+    print("9. Afișează facultățile după domeniu")
+    print("10. Salvează starea universității")
+    print("11. Înscriere în masă")
+    print("12. Absolvire în masă")
+    print("0. Ieșire")
+    optiune = int(input("Introduceți opțiunea dvs.: "))
+    if optiune == 0:
+        if input("Doriți să salvați înainte de ieșire? (d/n) ") == "d":
+            ManagerSalvare.salveaza(universitate)
+        break
+    elif optiune == 1:
+        nume = input("Introduceți numele facultății: ")
+        abreviere = input("Introduceți abrevierea facultății: ")
+        domeniuStudiu = input("Introduceți domeniul de studiu: ")
+        facultate = Facultate(nume, abreviere, domeniuStudiu)
+        universitate.adauga_facultate(facultate)
+    elif optiune == 2:
+        nume_facultate = input("Introduceți numele facultății: ")
+        prenume = input("Introduceți prenumele studentului: ")
+        nume = input("Introduceți numele studentului: ")
+        email = input("Introduceți emailul studentului: ")
+        data_inscriere = datetime.datetime.now()
+        data_nasterii = input("Introduceți data de naștere a studentului (aaaa-ll-zz): ")
+        data_nasterii = datetime.datetime.strptime(data_nasterii, "%Y-%m-%d")
+        student = Student(prenume, nume, email, data_inscriere, data_nasterii)
+        for facultate in universitate.facultati:
+            if facultate.nume == nume_facultate:
+                facultate.adauga_student(student)
+                break
+    elif optiune == 3:
+        nume_facultate = input("Introduceți numele facultății: ")
+        email = input("Introduceți emailul studentului: ")
+        for facultate in universitate.facultati:
+            if facultate.nume == nume_facultate:
+                for student in facultate.studenti:
+                    if student.email == email:
+                        facultate.absolvent_student(student)
+                        print(f"Studentul {student.prenume} {student.nume} a absolvit de la {facultate.nume}")
+                        break
+    elif optiune == 4:
+        nume_facultate = input("Introduceți numele facultății: ")
+        for facultate in universitate.facultati:
+            if facultate.nume == nume_facultate:
+                print(f"Studenți în {facultate.nume}:")
+                facultate.afiseaza_studenti()
+    elif optiune == 5:
+        nume_facultate = input("Introduceți numele facultății: ")
+        for facultate in universitate.facultati:
+            if facultate.nume == nume_facultate:
+                print(f"Absolvenți de la {facultate.nume}:")
+                facultate.afiseaza_absolventi()
+    elif optiune == 6:
+        nume_facultate = input("Introduceți numele facultății: ")
+        email = input("Introduceți emailul studentului: ")
+        for facultate in universitate.facultati:
+            if facultate.nume == nume_facultate:
+                for student in facultate.studenti:
+                    if student.email == email:
+                        print(f"Studentul {student.prenume} {student.nume} este la {facultate.nume}")
+                        break
+    elif optiune == 7:
+        email = input("Introduceți emailul studentului: ")
+        facultate = universitate.gaseste_facultate_student(email)
+        if facultate:
+            print(f"Studentul aparține de {facultate.nume}")
+        else:
+            print("Studentul nu a fost găsit în nicio facultate")
+    elif optiune == 8:
+        print("Toate facultățile:")
+        universitate.afiseaza_facultati()
+    elif optiune == 9:
+        domeniu = input("Introduceți domeniul: ")
+        print(f"Facultăți în domeniul {domeniu}:")
+        universitate.afiseaza_facultati_dupa_domeniu(domeniu)
+    elif optiune == 10:
+        ManagerSalvare.salveaza(universitate)
+        logger.log("Starea universității salvată")
+        print("Starea universității a fost salvată.")
+    elif optiune == 11:
+        nume_fisier = input("Introduceți numele fișierului pentru înscriere în masă: ")
+        with open(nume_fisier, "r") as fisier:
+            for linie in fisier:
+                prenume, nume, email, data_nasterii, nume_facultate = linie.strip().split(",")
+                data_nasterii = datetime.datetime.strptime(data_nasterii, "%Y-%m-%d")
+                student = Student(prenume, nume, email, datetime.datetime.now(), data_nasterii)
+                for facultate in universitate.facultati:
+                    if facultate.nume == nume_facultate:
+                        facultate.adauga_student(student)
+                        logger.log(f"Studentul {email} a fost înscris la {nume_facultate}")
+                        print(f"Studentul {email} a fost înscris la {nume_facultate}")
+                        break
+                else:
+                    print(f"Nu se poate înscrie studentul {email}: Facultatea {nume_facultate} nu a fost găsită")
+                    logger.log(f"Eroare la înscrierea studentului {email}: Facultatea {nume_facultate} nu a fost găsită")
+    elif optiune == 12:
+        nume_fisier = input("Introduceți numele fișierului pentru absolvire în masă: ")
+        with open(nume_fisier, "r") as fisier:
+            for linie in fisier:
+                email, nume_facultate = linie.strip().split(",")
+                for facultate in universitate.facultati:
+                    if facultate.nume == nume_facultate:
+                        for student in facultate.studenti:
+                            if student.email == email:
+                                facultate.absolvent_student(student)
+                                logger.log(f"Studentul {email} a absolvit de la {nume_facultate}")
+                                print(f"Studentul {email} a absolvit de la {nume_facultate}")
+                                break
+                        else:
+                            print(f"Nu se poate absolvi studentul {email}: Studentul nu a fost găsit la {nume_facultate}")
+                            logger.log(f"Eroare la absolvirea studentului {email}: Studentul nu a fost găsit la {nume_facultate}")
+                    break
+                else:
+                    print(f"Nu se poate absolvi studentul {email}: Facultatea {nume_facultate} nu a fost găsită")
+                    logger.log(f"Eroare la absolvirea studentului {email}: Facultatea {nume_facultate} nu a fost găsită")
